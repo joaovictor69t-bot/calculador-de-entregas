@@ -13,11 +13,16 @@ export const formatCurrency = (value: number): string => {
 export const formatDate = (dateString: string): string => {
   if (!dateString) return '';
   const date = new Date(dateString);
+  // Adjust for timezone offset to prevent date shifting
+  const userTimezoneOffset = date.getTimezoneOffset() * 60000;
+  const adjustedDate = new Date(date.getTime() + userTimezoneOffset);
+  
   return new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
-  }).format(date);
+    timeZone: 'UTC'
+  }).format(adjustedDate);
 };
 
 // Month Year Formatter (e.g., "Outubro 2023")
@@ -56,7 +61,7 @@ export const calculateDaily = (numberOfIds: 1 | 2, parcelCount: number): { value
   }
 };
 
-// Image Compressor (to save LocalStorage space)
+// Image Compressor (to save Bandwidth/Storage space)
 export const compressImage = async (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -66,10 +71,17 @@ export const compressImage = async (file: File): Promise<string> => {
       img.src = event.target?.result as string;
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 600; // Resize to max width 600px
+        const MAX_WIDTH = 800; // Resize to max width 800px
         const scaleSize = MAX_WIDTH / img.width;
-        canvas.width = MAX_WIDTH;
-        canvas.height = img.height * scaleSize;
+        
+        // Only resize if bigger than max width
+        if (img.width > MAX_WIDTH) {
+            canvas.width = MAX_WIDTH;
+            canvas.height = img.height * scaleSize;
+        } else {
+            canvas.width = img.width;
+            canvas.height = img.height;
+        }
 
         const ctx = canvas.getContext('2d');
         if (!ctx) {
@@ -86,6 +98,12 @@ export const compressImage = async (file: File): Promise<string> => {
     };
     reader.onerror = (error) => reject(error);
   });
+};
+
+// Helper to convert Base64 string to Blob for Supabase Upload
+export const base64ToBlob = async (base64: string): Promise<Blob> => {
+  const res = await fetch(base64);
+  return await res.blob();
 };
 
 // CSV Export

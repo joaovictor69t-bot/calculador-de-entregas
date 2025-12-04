@@ -2,14 +2,15 @@ import React, { useMemo } from 'react';
 import { WorkRecord } from '../types';
 import { formatCurrency } from '../utils';
 import { StatCard } from '../components/StatCard';
-import { Wallet, Package, TrendingUp } from 'lucide-react';
+import { Wallet, Package, TrendingUp, LogOut } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 interface DashboardProps {
   records: WorkRecord[];
+  onLogout: () => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ records }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ records, onLogout }) => {
   const stats = useMemo(() => {
     const now = new Date();
     const currentMonth = now.getMonth();
@@ -39,9 +40,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ records }) => {
 
   return (
     <div className="space-y-6 pb-20 pt-4 px-4">
-      <header className="mb-4">
-        <h1 className="text-2xl font-bold text-slate-800">Visão Geral</h1>
-        <p className="text-slate-500">Resumo deste mês</p>
+      <header className="mb-4 flex justify-between items-start">
+        <div>
+           <h1 className="text-2xl font-bold text-slate-800">Visão Geral</h1>
+           <p className="text-slate-500">Resumo deste mês</p>
+        </div>
+        <button 
+           onClick={onLogout}
+           className="flex items-center gap-1.5 text-xs font-medium text-red-500 bg-red-50 px-3 py-2 rounded-full hover:bg-red-100 transition-colors active:scale-95"
+           title="Sair"
+        >
+           <LogOut size={14} />
+           Sair
+        </button>
       </header>
 
       <div className="grid grid-cols-1 gap-4">
