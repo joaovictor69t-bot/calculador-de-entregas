@@ -1,0 +1,7 @@
+{
+  "name": "DriverLog Pro",
+  "description": "Registro diário de trabalho para motoristas com cálculo automático de diárias e parcelas.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
