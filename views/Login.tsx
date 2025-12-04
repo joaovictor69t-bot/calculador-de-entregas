@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Lock, User, Truck, Loader2, UserPlus, LogIn, AlertCircle } from 'lucide-react';
+import { Lock, User, Truck, Loader2, UserPlus, LogIn, AlertCircle } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 interface LoginProps {
@@ -13,7 +13,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
   // Form States
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState(''); // Alterado de email para username
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
@@ -21,6 +21,10 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
+
+    // Cria um e-mail sintético para o Supabase
+    // O usuário digita "joao", o sistema envia "joao@driverlog.local"
+    const syntheticEmail = `${username.trim().toLowerCase().replace(/\s+/g, '')}@driverlog.local`;
 
     try {
       if (isRegistering) {
@@ -34,34 +38,44 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         }
 
         const { data, error: signUpError } = await supabase.auth.signUp({
-            email,
+            email: syntheticEmail,
             password,
             options: {
                 data: {
                     full_name: name,
+                    username: username // Salva o nome de usuário original nos metadados
                 }
             }
         });
 
         if (signUpError) throw signUpError;
         
-        // Supabase login is automatic after signup if email confirmation is off, 
-        // or we alert them to check email.
+        // Se o Supabase estiver configurado para não exigir confirmação de e-mail,
+        // o usuário já estará logado.
         if (data.user) {
              onLoginSuccess();
+        } else {
+             // Caso raro onde o Supabase ainda exige confirmação, forçamos o login direto se possível
+             // ou avisamos o usuário (mas a ideia aqui é não precisar confirmar)
+             const { error: signInAfterSignUpError } = await supabase.auth.signInWithPassword({
+                email: syntheticEmail,
+                password,
+             });
+             if (!signInAfterSignUpError) {
+                 onLoginSuccess();
+             }
         }
 
       } else {
         // --- LOGIN LOGIC ---
         const { error: signInError } = await supabase.auth.signInWithPassword({
-            email,
+            email: syntheticEmail,
             password,
         });
 
         if (signInError) {
-            // Translate common Supabase errors
             if (signInError.message.includes('Invalid login')) {
-                throw new Error("E-mail ou senha incorretos.");
+                throw new Error("Usuário ou senha incorretos.");
             }
             throw signInError;
         }
@@ -94,7 +108,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
           </div>
           <h1 className="text-2xl font-bold text-slate-800">DriverLog Pro</h1>
           <p className="text-slate-500 text-sm mt-1">
-            {isRegistering ? 'Crie sua conta para começar' : 'Bem-vindo de volta'}
+            {isRegistering ? 'Crie sua conta de usuário' : 'Acesse com seu usuário'}
           </p>
         </div>
 
@@ -119,23 +133,25 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Seu Nome"
+                placeholder="Nome Completo"
                 className="block w-full pl-10 pr-3 py-3.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all bg-slate-50 focus:bg-white"
               />
             </div>
           )}
 
-          {/* Email Field */}
+          {/* Username Field (Substitui o Email) */}
           <div className="relative group">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Mail className="text-slate-400 group-focus-within:text-blue-500 transition-colors" size={20} />
+              <User className="text-slate-400 group-focus-within:text-blue-500 transition-colors" size={20} />
             </div>
             <input
-              type="email"
+              type="text"
               required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Seu e-mail"
+              autoCapitalize="none"
+              autoCorrect="off"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Usuário (ex: joaosilva)"
               className="block w-full pl-10 pr-3 py-3.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all bg-slate-50 focus:bg-white"
             />
           </div>
@@ -195,8 +211,8 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             className="text-sm text-slate-500 hover:text-blue-600 font-medium transition-colors"
           >
             {isRegistering 
-              ? 'Já possui uma conta? Faça Login' 
-              : 'Não tem conta? Crie agora'}
+              ? 'Já possui usuário? Faça Login' 
+              : 'Novo motorista? Crie seu usuário'}
           </button>
         </div>
       </div>
